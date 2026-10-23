@@ -59,7 +59,7 @@ IntelliChain does three things:
 
 ## 1. Machine learning: shipment risk model
 
-Real cold-chain sensor data isn't publicly available, so [`ml/generate_data.py`](Intelli-Chain/backend/ml/generate_data.py) **simulates 6,000 shipments**. Each product type has its own safe ranges:
+Real cold-chain sensor data isn't publicly available, so [`ml/generate_data.py`](backend/ml/generate_data.py) **simulates 6,000 shipments**. Each product type has its own safe ranges:
 
 | Product | Temperature | Max humidity | Delay tolerance |
 |---|---|---|---|
@@ -70,7 +70,7 @@ Real cold-chain sensor data isn't publicly available, so [`ml/generate_data.py`]
 
 A hidden spoilage score grows as readings leave the safe range, including an interaction term (heat hurts more the longer the delay). **Noise is added so the classes overlap**, so the model has to learn the pattern instead of one threshold.
 
-[`ml/train.py`](Intelli-Chain/backend/ml/train.py) compares three models with 5-fold cross-validation, using a scikit-learn `Pipeline` (scaling + one-hot encoding):
+[`ml/train.py`](backend/ml/train.py) compares three models with 5-fold cross-validation, using a scikit-learn `Pipeline` (scaling + one-hot encoding):
 
 | Model | CV macro F1 |
 |---|---|
@@ -92,14 +92,14 @@ A hidden spoilage score grows as readings leave the safe range, including an int
 
 ## 2. RAG: retrieval over company SOPs
 
-The [`knowledge/`](Intelli-Chain/backend/knowledge) folder holds 4 sample SOP documents (pharma cold chain, food, electronics and general cargo, risk escalation). [`retriever.py`](Intelli-Chain/backend/retriever.py) works like this:
+The [`knowledge/`](backend/knowledge) folder holds 4 sample SOP documents (pharma cold chain, food, electronics and general cargo, risk escalation). [`retriever.py`](backend/retriever.py) works like this:
 
 1. **Chunking:** each document is split at its `##` headings, so each chunk is one self-contained procedure (16 chunks).
 2. **Metadata:** an `Applies to:` line tags each document with product types. When a question is about a specific shipment, only that product's SOPs plus the general escalation policy are searched.
 3. **Embeddings:** chunks are embedded locally with **BAAI/bge-small-en-v1.5** through `fastembed` (ONNX, so no GPU, PyTorch or API key is needed) and ranked by cosine similarity.
 4. **Rules that always apply:** the escalation rule for a shipment's risk level is added by direct lookup, so it's never crowded out of the top results.
 
-**Evaluation.** [`evaluate_retrieval.py`](Intelli-Chain/backend/evaluate_retrieval.py) runs 16 labelled questions, each with the SOP section that should answer it:
+**Evaluation.** [`evaluate_retrieval.py`](backend/evaluate_retrieval.py) runs 16 labelled questions, each with the SOP section that should answer it:
 
 | Retriever | recall@1 | recall@3 |
 |---|---|---|
@@ -154,15 +154,15 @@ Response without an LLM key (with a key, `report` is written by the LLM and `rep
 ## Getting started
 
 ```bash
-git clone https://github.com/JahnaviPasupuleti45/Intelli-Chain.git
-cd Intelli-Chain
+git clone https://github.com/JahnaviPasupuleti45/IntelliChain.git
+cd IntelliChain
 cp .env.example .env          # optional: add your free Groq API key
 ```
 
 **Backend** (Python 3.12):
 
 ```bash
-cd Intelli-Chain/backend
+cd backend
 python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
@@ -180,7 +180,7 @@ python simulate_iot.py --rounds 5
 **Frontend** (Node 18+):
 
 ```bash
-cd Intelli-Chain/frontend
+cd frontend
 npm install
 npm start
 ```
@@ -200,7 +200,7 @@ The backend reads `.env` on startup (it is git-ignored, so the key is never comm
 ## Tests
 
 ```bash
-cd Intelli-Chain/backend
+cd backend
 python -m pytest -q                # 25 tests
 python evaluate_retrieval.py       # retrieval recall@1 / recall@3
 python -m ml.train                 # retrain and print model metrics
@@ -213,28 +213,27 @@ The tests cover authentication (hashing, tokens, protected routes), input valida
 ## Project structure
 
 ```
-Intelli-Chain/
+IntelliChain/
 ├── .env.example
-└── Intelli-Chain/
-    ├── backend/
-    │   ├── app.py                 # Flask app factory and REST endpoints
-    │   ├── config.py              # Settings from environment variables
-    │   ├── database.py            # SQLAlchemy models (User, ShipmentReading)
-    │   ├── auth.py                # Signed tokens, device API key
-    │   ├── risk_model.py          # Loads the model, predicts risk, describes breached limits
-    │   ├── retriever.py           # Chunking, embeddings, metadata filter, search
-    │   ├── reports.py             # SOP-grounded incident reports
-    │   ├── assistant.py           # Ops Copilot (live data + RAG + LLM)
-    │   ├── llm.py                 # Groq / Gemini client with safe fallback
-    │   ├── evaluate_retrieval.py  # Retrieval evaluation set
-    │   ├── simulate_iot.py        # IoT sensor simulator
-    │   ├── ml/                    # Data generation, training, metrics.json
-    │   ├── knowledge/             # SOP documents (RAG knowledge base)
-    │   └── tests/                 # pytest suite
-    └── frontend/src/
-        ├── api.js                 # API calls and session handling
-        ├── Dashboard.js
-        └── Components/            # Assistant, CheckOrder, Login, Register, ...
+├── backend/
+│   ├── app.py                 # Flask app factory and REST endpoints
+│   ├── config.py              # Settings from environment variables
+│   ├── database.py            # SQLAlchemy models (User, ShipmentReading)
+│   ├── auth.py                # Signed tokens, device API key
+│   ├── risk_model.py          # Loads the model, predicts risk, describes breached limits
+│   ├── retriever.py           # Chunking, embeddings, metadata filter, search
+│   ├── reports.py             # SOP-grounded incident reports
+│   ├── assistant.py           # Ops Copilot (live data + RAG + LLM)
+│   ├── llm.py                 # Groq / Gemini client with safe fallback
+│   ├── evaluate_retrieval.py  # Retrieval evaluation set
+│   ├── simulate_iot.py        # IoT sensor simulator
+│   ├── ml/                    # Data generation, training, metrics.json
+│   ├── knowledge/             # SOP documents (RAG knowledge base)
+│   └── tests/                 # pytest suite
+└── frontend/src/
+    ├── api.js                 # API calls and session handling
+    ├── Dashboard.js
+    └── Components/            # Assistant, CheckOrder, Login, Register, ...
 ```
 
 ## Limitations and next steps
