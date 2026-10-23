@@ -1,0 +1,12 @@
+flask==3.1.*
+flask-cors==6.0.*
+flask-sqlalchemy==3.1.*
+scikit-learn==1.7.*
+pandas==2.3.*
+numpy==2.2.*
+joblib==1.5.*
+requests==2.32.*
+python-dotenv==1.*
+fastembed==0.9.*
+gunicorn==23.0.*
+pytest==8.*
